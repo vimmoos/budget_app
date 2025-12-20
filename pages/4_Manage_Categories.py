@@ -71,48 +71,6 @@ with tab1:
         st.success("Categories Saved!")
         st.rerun()
 
-    # --- CSV IMPORT SECTION ---
-    st.divider()
-    with st.expander("📥 Import Categories from CSV"):
-        st.write("Upload a CSV with headers: `name`, `group`, `type`")
-        cat_file = st.file_uploader("Upload CSV", type=["csv"], key="cat_imp")
-
-        if cat_file and st.button("Load Categories"):
-            try:
-                import_df = pd.read_csv(cat_file)
-
-                # Check headers (case insensitive)
-                import_df.columns = [c.lower().strip() for c in import_df.columns]
-                required = {"name", "group", "type"}
-
-                if not required.issubset(import_df.columns):
-                    st.error(f"CSV missing columns. Required: {required}")
-                else:
-                    count = 0
-                    existing_names = {c.name.lower() for c in categories}
-
-                    for index, row in import_df.iterrows():
-                        c_name = str(row["name"]).strip()
-                        c_group = str(row["group"]).strip()
-                        c_type = str(row["type"]).strip()
-
-                        # Only add if name is valid and doesn't exist
-                        if c_name and c_name.lower() not in existing_names:
-                            session.add(
-                                Category(name=c_name, group=c_group, type=c_type)
-                            )
-                            existing_names.add(c_name.lower())
-                            count += 1
-
-                    session.commit()
-                    if count > 0:
-                        st.success(f"Successfully imported {count} new categories!")
-                        st.rerun()
-                    else:
-                        st.info("No new categories found (all names already exist).")
-            except Exception as e:
-                st.error(f"Error importing file: {e}")
-
 
 # --- TAB 2: REGEX RULES ---
 with tab2:
@@ -204,32 +162,3 @@ with tab2:
                             pass  # Skip bad rules
             session.commit()
             st.success(f"Scanned history: Updated {count} transactions!")
-
-    st.divider()
-    with st.expander("📥 Import Rules from CSV"):
-        rule_file = st.file_uploader(
-            "Upload rules.csv (Headers: keyword, category_name)", type=["csv"]
-        )
-        if rule_file and st.button("Load from CSV"):
-            try:
-                import_df = pd.read_csv(rule_file)
-                added = 0
-                for idx, r_row in import_df.iterrows():
-                    kw = str(r_row["keyword"]).strip()
-                    c_name = str(r_row["category_name"]).strip()
-
-                    if c_name in cat_map:
-                        exists = False
-                        for r in rules:
-                            if r.keyword == kw:
-                                exists = True
-                        if not exists:
-                            session.add(
-                                CategoryRule(keyword=kw, category_id=cat_map[c_name])
-                            )
-                            added += 1
-                session.commit()
-                st.success(f"Imported {added} rules!")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Import failed: {e}")
