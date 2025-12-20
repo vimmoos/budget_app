@@ -36,7 +36,8 @@ st.header("2. Merge Database")
 st.markdown(
     """
 Upload a `finance.db` from another device.
-**Logic:** Syncs Accounts, Categories (with linked Accounts), Rules, Transactions, Budgets, and **Notes**.
+**Logic:** This will smartly import **Accounts, Balances, Categories, Rules, Transactions, Budgets, and Notes**.
+*Existing data will be updated to match the file.*
 """
 )
 
@@ -78,14 +79,10 @@ if uploaded_db:
                 upload_acct_id_to_name[r_dict["id"]] = name
 
                 if name in acct_map_name_obj:
-                    # Update balance if imported one has data
+                    # Always update balance to match source file
                     target_acct = acct_map_name_obj[name]
-                    if (
-                        target_acct.initial_balance == 0.0
-                        and r_dict.get("initial_balance", 0.0) != 0.0
-                    ):
-                        target_acct.initial_balance = r_dict.get("initial_balance", 0.0)
-                        session.add(target_acct)
+                    target_acct.initial_balance = r_dict.get("initial_balance", 0.0)
+                    session.add(target_acct)
                 else:
                     new_acct = Account(
                         name=name,
@@ -129,11 +126,10 @@ if uploaded_db:
                         linked_acct_id = acct_name_to_new_id.get(old_acct_name)
 
                 if name in existing_cat_map:
-                    # Update existing category link if missing locally but present in import
+                    # Update existing category link
                     cat = existing_cat_map[name]
-                    if not cat.default_account_id and linked_acct_id:
-                        cat.default_account_id = linked_acct_id
-                        session.add(cat)
+                    cat.default_account_id = linked_acct_id
+                    session.add(cat)
                 else:
                     new_c = Category(
                         name=name,
@@ -232,24 +228,59 @@ if uploaded_db:
                         stats["tx"] += 1
 
             # ==========================================
-            # E. SYNC NOTES
+            # E. MERGE BUDGETS (FIXED: Upsert Logic)
+            # ==========================================
+            st.write("Syncing Budgets...")
+
+            # Fetch existing budgets: {category_id: BudgetObject}
+            existing_budgets = session.exec(select(Budget)).all()
+            budget_map = {b.category_id: b for b in existing_budgets}
+
+            try:
+                cur_new.execute("SELECT * FROM budget")
+                rows_bd = cur_new.fetchall()
+
+                for r in rows_bd:
+                    r_dict = dict(r)
+                    cat_name = upload_cat_id_to_name.get(r_dict["category_id"])
+                    new_cat_id = cat_name_to_new_id.get(cat_name)
+
+                    if new_cat_id:
+                        new_amount = r_dict["amount"]
+
+                        if new_cat_id in budget_map:
+                            # Update existing budget if different
+                            existing_b = budget_map[new_cat_id]
+                            if existing_b.amount != new_amount:
+                                existing_b.amount = new_amount
+                                session.add(existing_b)
+                                stats["bd"] += 1  # Count updates too
+                        else:
+                            # Create new budget
+                            new_b = Budget(category_id=new_cat_id, amount=new_amount)
+                            session.add(new_b)
+                            # Add to map so we don't duplicate if file has dupes
+                            budget_map[new_cat_id] = new_b
+                            stats["bd"] += 1
+            except sqlite3.OperationalError:
+                pass
+
+            # ==========================================
+            # F. SYNC NOTES
             # ==========================================
             st.write("Syncing Notes...")
             try:
                 cur_new.execute("SELECT * FROM note")
                 rows_notes = cur_new.fetchall()
                 if rows_notes:
-                    # Get local note
                     local_note = session.exec(select(Note)).first()
                     if not local_note:
                         local_note = Note(content="")
                         session.add(local_note)
 
-                    imported_content = rows_notes[0][
-                        "content"
-                    ]  # Assuming single note row for now
+                    imported_content = rows_notes[0]["content"]
 
-                    # If content is different, append it
+                    # Simple append if not present, to avoid data loss
                     if imported_content and imported_content not in local_note.content:
                         separator = "\n\n--- Imported Note ---\n"
                         local_note.content += separator + imported_content
@@ -268,11 +299,11 @@ if uploaded_db:
             st.success(
                 f"""
             **Merge Complete!**
-            - 🏦 Accounts & Links Updated
-            - 📂 {stats['cat']} New Categories
+            - 🏦 Accounts & Balances Updated
+            - 📂 {stats['cat']} Categories Synced
+            - 📊 {stats['bd']} Budgets Updated/Added
+            - 💳 {stats['tx']} Transactions Added
             - 📝 {stats['note']} Notes Synced
-            - 💳 {stats['tx']} New Transactions
-            - 📏 {stats['rules']} New Rules
             """
             )
             st.balloons()
