@@ -1,0 +1,17 @@
+# Ignore Database
+data/
+*.db
+finance.db
+
+# Ignore personal files
+*.csv
+*.xlsx
+.DS_Store
+
+# Ignore Python caches
+__pycache__/
+*.pyc
+
+# Ignore virtual env (if you have one locally)
+venv/
+.env

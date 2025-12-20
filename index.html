@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Finance OS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/browser@0.85.1/build/stlite.css" />
+    <link rel="manifest" href="manifest.json" />
+
+    <link rel="shortcut icon" href="https://cdn-icons-png.flaticon.com/512/3310/3310653.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3310/3310653.png">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import { mount } from "https://cdn.jsdelivr.net/npm/@stlite/browser@0.85.1/build/stlite.js";
+
+      mount(
+        {
+          requirements: ["pandas", "plotly", "sqlmodel", "openpyxl", "xlrd"],
+          entrypoint: "Home.py",
+          // Mount the 'data' directory to IndexedDB for persistence
+          idbfsMountpoints: ["data"],
+          files: {
+            // Main Entry
+            "Home.py": { url: "./Home.py" },
+
+            // Source Code
+            "src/database.py": { url: "./src/database.py" },
+            "src/models.py": { url: "./src/models.py" },
+            "src/analytics.py": { url: "./src/analytics.py" },
+
+            // Pages
+            "pages/1_Import_Data.py": { url: "./pages/1_Import_Data.py" },
+            "pages/2_Budget_Planner.py": { url: "./pages/2_Budget_Planner.py" },
+            "pages/3_Transaction_Manager.py": { url: "./pages/3_Transaction_Manager.py" },
+            "pages/4_Manage_Categories.py": { url: "./pages/4_Manage_Categories.py" },
+            "pages/5_Manage_Banks.py": { url: "./pages/5_Manage_Banks.py" },
+            "pages/6_Reconciliation_Advisor.py": { url: "./pages/6_Reconciliation_Advisor.py" },
+            "pages/7_Funds_&_Balances.py": { url: "./pages/7_Funds_&_Balances.py" },
+            "pages/8_Notes.py": { url: "./pages/8_Notes.py" },
+            "pages/9_Settings.py": { url: "./pages/9_Settings.py" },
+
+            // Config
+            ".streamlit/config.toml": {
+                data: '[theme]\nbase="light"\n[server]\nrunOnSave=false\n[client]\nshowErrorDetails=false',
+            }
+          },
+        },
+        document.getElementById("root")
+      );
+
+      // Register Service Worker for PWA (Offline capabilities)
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js');
+        });
+      }
+    </script>
+  </body>
+</html>
