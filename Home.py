@@ -85,8 +85,8 @@ else:
 col1, col2, col3 = st.columns(3)
 
 # Filter exclusions
-excluded_cats = ["Transfer", "Investments"]
-mask_real = ~df_tx["category_name"].isin(excluded_cats)
+excluded_cats = ["Transfer"]
+mask_real = ~df_tx["category_name"].isin(excluded_cats + ["Investments"])
 df_real = df_tx[mask_real]
 
 total_income = df_real[df_real["amount"] > 0]["amount"].sum()
@@ -105,6 +105,8 @@ col3.metric("Savings Rate", f"{savings_rate:.1f}%")
 
 st.divider()
 
+df_real_with_inv = df_tx[~df_tx["category_name"].isin(excluded_cats)]
+df_real = df_real_with_inv
 # --- 📊 ANALYSIS SECTION ---
 if not df_real.empty and total_spend_actual < 0:
     st.subheader("📊 Analysis by Group & Category")
@@ -165,9 +167,9 @@ with c_head:
 with c_toggle:
     hide_exact = st.toggle("Hide Exact Matches", value=True)
 
-if not df_real.empty:
+if not df_real_with_inv.empty:
     actuals = (
-        df_real[df_real["amount"] < 0]
+        df_real_with_inv[df_real_with_inv["amount"] < 0]
         .groupby("category_name")["amount"]
         .sum()
         .reset_index()

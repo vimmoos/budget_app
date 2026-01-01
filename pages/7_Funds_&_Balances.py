@@ -174,12 +174,15 @@ with tab3:
         )
         .order_by(Transaction.date.desc())
     ).all()
+    st.metric("Total Reserved", f"€{sum([r.amount for r in reservations]):,.2f}")
 
     col_res, col_real = st.columns(2)
 
     # --- LEFT COLUMN: RESERVATIONS ---
+
     with col_res:
         st.markdown("### 1. Select Reservations")
+
         if not reservations:
             st.info("No active reservations.")
             selected_res_ids = []
