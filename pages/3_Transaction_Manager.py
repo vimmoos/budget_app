@@ -136,7 +136,8 @@ with st.expander("🔄 Detect & Link Internal Transfers", expanded=False):
                             "Desc 1": p.description,
                             "Out ($)": n.amount,
                             "Desc 2": n.description,
-                            "ids": (p.id, n.id),
+                            "id_pos": p.id,
+                            "id_neg": n.id,
                         }
                     )
                 df_matches = pd.DataFrame(match_data)
@@ -144,7 +145,8 @@ with st.expander("🔄 Detect & Link Internal Transfers", expanded=False):
                     df_matches,
                     column_config={
                         "Select": st.column_config.CheckboxColumn(default=True),
-                        "ids": None,
+                        "id_pos": None,
+                        "id_neg": None,
                     },
                     hide_index=True,
                     use_container_width=True,
@@ -153,7 +155,8 @@ with st.expander("🔄 Detect & Link Internal Transfers", expanded=False):
                     count = 0
                     for index, row in edited_matches.iterrows():
                         if row["Select"]:
-                            id_pos, id_neg = row["ids"]
+                            id_pos = int(row["id_pos"])
+                            id_neg = int(row["id_neg"])
                             t1 = session.get(Transaction, id_pos)
                             t2 = session.get(Transaction, id_neg)
                             if t1 and t2:
