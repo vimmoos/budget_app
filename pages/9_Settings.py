@@ -312,3 +312,38 @@ if uploaded_db:
             st.error(f"Error during merge: {e}")
             if os.path.exists(temp_path):
                 os.remove(temp_path)
+
+st.divider()
+
+# --- SECTION 3: RESTORE (OVERWRITE) ---
+st.header("3. Overwrite Database (Restore)")
+st.error(
+    "⚠️ **DANGER ZONE**: This will DELETE your current data and replace it with the uploaded file."
+)
+
+restore_db = st.file_uploader(
+    "Upload finance.db to restore",
+    type=["db", "sqlite"],
+    key="restore_uploader",
+    help="This is useful for restoring a backup.",
+)
+
+if restore_db:
+    if st.button("🚨 Overwrite Current Database", type="primary"):
+        try:
+            # 1. Dispose engine to release file locks
+            engine.dispose()
+
+            # 2. Backup current DB just in case (renaming it)
+            if os.path.exists(DB_PATH):
+                shutil.copy(DB_PATH, f"{DB_PATH}.bak")
+
+            # 3. Overwrite the file
+            with open(DB_PATH, "wb") as f:
+                f.write(restore_db.getbuffer())
+
+            st.success("Database restored successfully! Reloading app...")
+            st.rerun()
+
+        except Exception as e:
+            st.error(f"Failed to restore database: {e}")
