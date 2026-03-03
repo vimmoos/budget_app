@@ -21,7 +21,7 @@
 
       mount(
         {
-          requirements: ["pandas", "plotly", "sqlmodel", "openpyxl", "xlrd"],
+          requirements: ["pandas", "plotly", "sqlmodel==0.0.16", "pydantic<2", "openpyxl", "xlrd"],
           entrypoint: "Home.py",
           // Mount the 'data' directory to IndexedDB for persistence
           idbfsMountpoints: ["data"],
